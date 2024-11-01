@@ -48,10 +48,12 @@ class BLIPModelWrapper:
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 # different to CLIPModelWrapper: text_encoder instead of get_text_features and apply projection and normalization
                 text_outputs = self.model.text_encoder(**inputs)
-                text_outputs = text_outputs[0]#[:,0]
-           
-                text_outputs = normalize(self.model.text_proj(text_outputs[:, 0, :]), dim=-1)
-   
+                text_outputs = text_outputs[0]
+
+                text_outputs = normalize(
+                    self.model.text_proj(text_outputs[:, 0, :]), dim=-1
+                )
+
                 all_text_embeddings.append(text_outputs.cpu())
 
         all_text_embeddings = torch.cat(all_text_embeddings, dim=0)
@@ -70,7 +72,7 @@ class BLIPModelWrapper:
                     )
                     inputs = {k: v.to(self.device) for k, v in inputs.items()}
                     image_outputs = self.model.vision_model(**inputs)
-                    image_outputs = image_outputs[0]#[:, 0]
+                    image_outputs = image_outputs[0]
                     image_outputs = normalize(
                         self.model.vision_proj(image_outputs[:, 0, :]), dim=-1
                     )
@@ -84,10 +86,10 @@ class BLIPModelWrapper:
                     )
                     inputs = {k: v.to(self.device) for k, v in inputs.items()}
                     image_outputs = self.model.vision_model(**inputs)
-                    image_outputs = image_outputs[0]#[:, 0]
+                    image_outputs = image_outputs[0]
                     image_outputs = normalize(
                         self.model.vision_proj(image_outputs[:, 0, :]), dim=-1
-                    )#"""
+                    )  # """
                     all_image_embeddings.append(image_outputs.cpu())
 
         all_image_embeddings = torch.cat(all_image_embeddings, dim=0)
@@ -237,11 +239,10 @@ blip_itm_large_flickr = ModelMeta(
 )
 
 
-
 if __name__ == "__main__":
     import mteb
-    mdl = mteb.get_model(blip_itm_base_coco.name, blip_itm_base_coco.revision)
 
+    mdl = mteb.get_model(blip_itm_large_coco.name, blip_itm_large_coco.revision)
 
     emb = mdl.get_text_embeddings(["Hello, world!"])
     emb2 = mdl.get_text_embeddings(["Hello there, world!"])
@@ -264,11 +265,17 @@ if __name__ == "__main__":
     )
     image_cat_emb = mdl.get_image_embeddings([cat_img])
     text_cat_emb = mdl.get_text_embeddings(["An photo of a cat"])
-    text_dog_emb = mdl.get_text_embeddings(["An image of a dog"])
+    text_dog_emb = mdl.get_text_embeddings(["An photo of a dog"])
 
     print(multi_cat_emb.shape)
-    sim0 = torch.nn.functional.cosine_similarity(mdl.get_text_embeddings(["A photo of a cat"]), mdl.get_text_embeddings(["An image of a cat"]))
-    sim01 = torch.nn.functional.cosine_similarity(mdl.get_text_embeddings(["A photo of a cat"]), mdl.get_text_embeddings(["An image of a dog"]))
+    sim0 = torch.nn.functional.cosine_similarity(
+        mdl.get_text_embeddings(["A photo of a cat"]),
+        mdl.get_text_embeddings(["An image of a cat"]),
+    )
+    sim01 = torch.nn.functional.cosine_similarity(
+        mdl.get_text_embeddings(["A photo of a cat"]),
+        mdl.get_text_embeddings(["An image of a dog"]),
+    )
     sim1 = torch.nn.functional.cosine_similarity(image_cat_emb, text_cat_emb)
     sim2 = torch.nn.functional.cosine_similarity(image_cat_emb, text_dog_emb)
     sim3 = torch.nn.functional.cosine_similarity(multi_cat_emb, text_cat_emb)
